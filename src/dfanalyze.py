@@ -3,7 +3,6 @@ import pyspark
 import pyspark.sql.functions as F
 import pyspark.sql.types as T
 
-import os
 import pandas as pd
 import math
 
@@ -18,6 +17,50 @@ def init_spark():
         .getOrCreate())
 
     return spark
+
+
+def load_df_from_csv(spark, csvString):
+    # Read raw CSV file into Pandas
+    rawPandasDF = pd.read_csv(csvString)
+
+    # Create schema for PySpark DF
+    schema = T.StructType([
+        (T.StructField('Payment Type', T.StringType())),
+        (T.StructField('Loan Id', T.IntegerType())),
+        (T.StructField('Company', T.StringType())),
+        (T.StructField('Loan Name', T.StringType())),
+        (T.StructField('Interest Rate', T.FloatType())),
+        (T.StructField('Risk Band', T.StringType())),
+        (T.StructField('Interest Scheduled', T.FloatType())),
+        (T.StructField('Principal Scheduled', T.FloatType())),
+        (T.StructField('Total Scheduled', T.FloatType())),
+        (T.StructField('Interest Owed', T.FloatType())),
+        (T.StructField('Principal Owed', T.FloatType())),
+        (T.StructField('Total Owed', T.FloatType())),
+        (T.StructField('Interest Paid', T.FloatType())),
+        (T.StructField('Principal Paid', T.FloatType())),
+        (T.StructField('Total Paid', T.FloatType())),
+        (T.StructField('Fees Paid to Loop', T.FloatType())),
+        (T.StructField('Due Date', T.StringType())),
+        (T.StructField('Date Paid', T.StringType())),
+        (T.StructField('Status', T.StringType())),
+    ])
+
+    # Convert pandas DF to PySpark DF
+    rawDF = spark.createDataFrame(rawPandasDF, schema)
+
+    # Camel case titles
+    camelCaseDict = {title: title[0].lower() + title.replace(' ', '')[1:] for title in rawDF.columns}
+
+    # Simplify certain column titles
+    camelCaseDict['Fees Paid to Loop'] = 'fees'
+    camelCaseDict['Risk Band'] = 'grade'
+    camelCaseDict['Loan Id'] = 'loanID'
+
+    # Camelcase column titles
+    rawDF = rawDF.select([F.col(title).alias(camelCaseDict[title]) for title in camelCaseDict.keys()])
+
+    return rawDF
 
 
 def obtain_notes(DF, interestRatesBroadcast):
@@ -148,45 +191,3 @@ def analyze_notes(DF):
     return DF
 
 
-def load_df_from_csv(spark, CSV_URL):
-    # Read raw CSV file into Pandas
-    rawPandasDF = pd.read_csv(CSV_URL)
-
-    # Create schema for PySpark DF
-    schema = T.StructType([
-        (T.StructField('Payment Type', T.StringType())),
-        (T.StructField('Loan Id', T.IntegerType())),
-        (T.StructField('Company', T.StringType())),
-        (T.StructField('Loan Name', T.StringType())),
-        (T.StructField('Interest Rate', T.FloatType())),
-        (T.StructField('Risk Band', T.StringType())),
-        (T.StructField('Interest Scheduled', T.FloatType())),
-        (T.StructField('Principal Scheduled', T.FloatType())),
-        (T.StructField('Total Scheduled', T.FloatType())),
-        (T.StructField('Interest Owed', T.FloatType())),
-        (T.StructField('Principal Owed', T.FloatType())),
-        (T.StructField('Total Owed', T.FloatType())),
-        (T.StructField('Interest Paid', T.FloatType())),
-        (T.StructField('Principal Paid', T.FloatType())),
-        (T.StructField('Total Paid', T.FloatType())),
-        (T.StructField('Fees Paid to Loop', T.FloatType())),
-        (T.StructField('Due Date', T.StringType())),
-        (T.StructField('Date Paid', T.StringType())),
-        (T.StructField('Status', T.StringType())),
-    ])
-
-    # Convert pandas DF to PySpark DF
-    rawDF = spark.createDataFrame(rawPandasDF, schema)
-
-    # Camel case titles
-    camelCaseDict = {title: title[0].lower() + title.replace(' ', '')[1:] for title in rawDF.columns}
-
-    # Simplify certain column titles
-    camelCaseDict['Fees Paid to Loop'] = 'fees'
-    camelCaseDict['Risk Band'] = 'grade'
-    camelCaseDict['Loan Id'] = 'loanID'
-
-    # Camelcase column titles
-    rawDF = rawDF.select([F.col(title).alias(camelCaseDict[title]) for title in camelCaseDict.keys()])
-
-    return rawDF

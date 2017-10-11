@@ -46,5 +46,5 @@ def calc_diversification(DF):
 
 
 def calc_funds_remaining(DF, totalFunds):
-    res = totalFunds - DF.groupBy().agg(F.sum('principal')).first()[0]
+    res = totalFunds - DF.groupBy().agg(F.sum('principalOutstanding')).first()[0]
     return '${:,.2f}'.format(res)
