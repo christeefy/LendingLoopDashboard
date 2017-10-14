@@ -87,10 +87,16 @@ def update_metrics_total_earnings(n_clicks):
 
 
 @app.callback(
-    Output('ROI-display', 'children'),
+    Output('current-ROI-display', 'children'),
     [Input('submit-total-funds-button', 'n_clicks')])
-def update_metrics_ROI(pathname):
-    return metrics.calc_ROI(analyzedDF)
+def update_metrics_current_ROI(pathname):
+    return metrics.calc_current_ROI(analyzedDF)
+
+@app.callback(
+    Output('net-ROI-display', 'children'),
+    [Input('submit-total-funds-button', 'n_clicks')])
+def update_metrics_net_ROI(pathname):
+    return metrics.calc_net_ROI(analyzedDF)
 
 
 @app.callback(

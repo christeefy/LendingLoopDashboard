@@ -44,11 +44,21 @@ layout = html.Div([
             )
         ]),
         html.Div([
-            html.H2('Average Net ROI'),
+            html.H2('Current ROI'),
             html.Div(
-                id  = 'ROI-display', 
+                id  = 'current-ROI-display', 
             )
         ]),
+        html.Div([
+            html.H2('Net ROI'),
+            html.Div(
+                id = 'net-ROI-display'
+            )
+        ])
+    ], style={
+        'columnCount': 3
+    }),
+    html.Div([
         html.Div([
             html.H2('Funds Available'),
             html.Div(id='funds-available-display')
@@ -59,9 +69,7 @@ layout = html.Div([
                 id = 'diversification-display', 
             )
         ])
-    ], style={
-        'columnCount': 4
-    }),
+    ], style={'columnCount': 2}),
     html.Br(),
     html.Div([
         html.Div(children=[

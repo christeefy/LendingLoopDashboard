@@ -1,10 +1,6 @@
 import dfanalyze
-import os
 
-
-CSV_URL = 'https://www.dropbox.com/s/1zrh1636odu7757/all_payments.csv?dl=1'
-
-interestRates = {
+badDebtRates = {
     'A+': 0.56,
     'A': 1.83,
     'B+': 3.05,
@@ -17,13 +13,15 @@ interestRates = {
     'E': 9.64,
 }
 
+LENDING_LOOP_FEE_RATE = 1.5
+
 def init_spark():
     # Obtain handler for spark
     return dfanalyze.init_spark()
 
 def process_data(spark, csvString):
     # Broadcast interest rates
-    interestRatesBroadcast = spark.sparkContext.broadcast(interestRates)
+    badDebtRatesBroadcast = spark.sparkContext.broadcast(badDebtRates)
 
     # Convert Pandas DF to PySpark DF
     print 'Loading csv...'
@@ -31,7 +29,7 @@ def process_data(spark, csvString):
 
     # Obtain notes
     print 'Obtaining notes...'
-    notesDF = dfanalyze.obtain_notes(rawDF, interestRatesBroadcast)
+    notesDF = dfanalyze.obtain_notes(rawDF, badDebtRatesBroadcast)
 
     # Add transactions to notes
     print 'Adding transactions...'

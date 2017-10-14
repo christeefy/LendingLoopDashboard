@@ -225,7 +225,7 @@ def progress_bar(DF, grade=None):
             'x': 0.3
         },
         annotations = annotations,
-        margin = {'t': 0}
+        margin = {'t': 0 }
     )
 
     return {

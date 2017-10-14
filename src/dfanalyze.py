@@ -63,7 +63,7 @@ def load_df_from_csv(spark, csvString):
     return rawDF
 
 
-def obtain_notes(DF, interestRatesBroadcast):
+def obtain_notes(DF, badDebtRatesBroadcast):
     '''
     Return a Spark DataFrame containing summaries of notes in each row.
     '''
@@ -79,7 +79,7 @@ def obtain_notes(DF, interestRatesBroadcast):
 
     @F.udf(returnType=T.FloatType())
     def bad_debt_funds(principal, grade, cyclesTotal):
-        rate = interestRatesBroadcast.value[grade] / 1200
+        rate = badDebtRatesBroadcast.value[grade] / 1200
         return round(principal * (cyclesTotal * rate / (1 - (1 + rate)**(-cyclesTotal)) - 1), 2)
 
     # Obtain list of new notes from input DF
@@ -111,15 +111,16 @@ def update_notes_with_transactions(rawDF, notesDF):
     netTransactionsDF = (rawDF
                          .filter(F.isnull('datePaid') == 'False')
                          .groupBy('loanID')
-                         .agg(F.sum('totalPaid').alias('totalPaid')))
+                         .agg(F.sum('totalPaid').alias('totalPaid'), 
+                              F.count('loanID').alias('numPayments')))
     
     # Update noteStates
     updatedNotesStateDF = (notesDF
                            .join(netTransactionsDF, 'loanID', 'left_outer')
-                           .withColumn('amountRepayed', F.col('amountRepayed') + F.col('totalPaid'))
-                           .withColumn('cyclesRemaining', F.col('cyclesRemaining') - 1)
-                           .drop('totalPaid')
                            .fillna(0.0)
+                           .withColumn('amountRepayed', F.col('amountRepayed') + F.col('totalPaid'))
+                           .withColumn('cyclesRemaining', F.col('cyclesRemaining') - F.col('numPayments'))
+                           .drop('totalPaid', 'numPayments')
                            .cache())
     
     return updatedNotesStateDF
@@ -184,8 +185,8 @@ def analyze_notes(DF):
                                           'principalOutstanding',
                                           'unitPayment'))
           .withColumn('completed', completed('cyclesRemaining'))
-          .orderBy(['feesPaid', 'principal', 'principalOutstanding', 'interestRate', 'cyclesTotal'], 
-                   ascending=[1, 1, 0, 1, 1])
+          .orderBy(['principal', 'interestRate'], 
+                   ascending=[1, 1])
           .cache())
     
     return DF
